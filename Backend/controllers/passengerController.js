@@ -6,6 +6,7 @@ const OTP = require("../models/otpModel");
 const SMSService = require("../utils/sendSMS");
 const AppError = require("./../utils/appError");
 const factory = require("./handlefactory");
+const TwilioService = require("../utils/sendSMS");
 
 const { access } = require("fs");
 
@@ -42,12 +43,12 @@ const createSendToken = (passenger, statusCode, res) => {
 };
 
 exports.signup = catchAsync(async (req, res, next) => {
-  // Generate a 5-digit OTP
+  //1) Generate a 5-digit OTP
   const otp = Math.random().toString().substring(2, 7);
 
   const newPassenger = await Passenger.create(req.body);
 
-  // Store OTP with the contact information
+  // 2) Store OTP with the contact information
   const otpEntry = new OTP({
     contact: req.body.contact,
     otp: otp,
@@ -55,26 +56,26 @@ exports.signup = catchAsync(async (req, res, next) => {
   });
   await otpEntry.save();
 
-  const smsService = new SMSService(
-    process.env.REGION,
-    process.env.AWS_ACCESS_KEY,
-    process.env.AWS_SECRET_KEY
+  // 3) Send it to the passenger's phone number
+  const twilioService = new TwilioService(
+    process.env.TWILIO_ACCOUNT_SID,
+    process.env.TWILIO_AUTH_TOKEN,
+    "+12513091646" // Your Twilio phone number
   );
 
-  const contact = req.body.contact;
-
-  smsService
-    .sendSMS(contact, otp)
-    .then((response) => {
-      console.log("SMS sent successfully:", response);
-    })
-    .catch((error) => {
-      console.error("Failed to send SMS:", error);
+  try {
+    await twilioService.sendSMS(req.body.contact, otp);
+    res.status(200).json({
+      status: "success",
+      message: "OTP sent to your phone number.",
     });
-  res.status(200).json({
-    status: "success",
-    message: "OTP sent to your phone number.",
-  });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Failed to send OTP.",
+      error: error.message,
+    });
+  }
 });
 
 exports.verifyContact = async (req, res, next) => {
@@ -187,26 +188,26 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   });
   await otpEntry.save({ validateBeforeSave: false });
 
-  const smsService = new SMSService(
-    process.env.REGION,
-    process.env.AWS_ACCESS_KEY,
-    process.env.AWS_SECRET_KEY
+  // 3) Send it to the driver's phone number
+  const twilioService = new TwilioService(
+    process.env.TWILIO_ACCOUNT_SID,
+    process.env.TWILIO_AUTH_TOKEN,
+    "+12513091646" // Your Twilio phone number
   );
 
-  const contact = req.body.contact;
-
-  smsService
-    .sendSMS(contact, otp)
-    .then((response) => {
-      console.log("SMS sent successfully:", response);
-    })
-    .catch((error) => {
-      console.error("Failed to send SMS:", error);
+  try {
+    await twilioService.sendSMS(req.body.contact, otp);
+    res.status(200).json({
+      status: "success",
+      message: "OTP sent to your phone number.",
     });
-  res.status(200).json({
-    status: "success",
-    message: "OTP sent to your phone number.",
-  });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Failed to send OTP.",
+      error: error.message,
+    });
+  }
 });
 
 exports.resetPassword = catchAsync(async (req, res, next) => {

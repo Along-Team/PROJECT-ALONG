@@ -7,7 +7,8 @@ const catchAsync = require("../utils/catchAsync");
 const Driver = require("./../models/driverModel");
 const OTP = require("../models/otpModel");
 const AppError = require("./../utils/appError");
-const { access } = require("fs");
+const TwilioService = require("../utils/sendSMS");
+// const { access } = require("fs");
 
 require("dotenv").config;
 
@@ -62,55 +63,26 @@ exports.initiateSignup = catchAsync(async (req, res, next) => {
   });
   await otpEntry.save();
 
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const client = require("twilio")(accountSid, authToken);
+  // 3) Send it to the passenger's phone number
+  const twilioService = new TwilioService(
+    process.env.TWILIO_ACCOUNT_SID,
+    process.env.TWILIO_AUTH_TOKEN,
+    "+12513091646" // Your Twilio phone number
+  );
 
-  async function createMessage() {
-    const message = await client.messages.create({
-      body: `Your OTP code is: ${otp}`,
-      from: "+12513091646",
-      to: req.body.contact,
+  try {
+    await twilioService.sendSMS(req.body.contact, otp);
+    res.status(200).json({
+      status: "success",
+      message: "OTP sent to your phone number.",
     });
-
-    console.log(message.body);
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Failed to send OTP.",
+      error: error.message,
+    });
   }
-
-  createMessage();
-
-  // async function sendSMSMessage(sns, params) {
-  //   const command = new PublishCommand(params);
-  //   const message = await sns.send(command);
-  //   return message;
-  // }
-  // // console.log(req.body.contact)
-
-  // (async () => {
-  //   const params = {
-  //     Message: `Your OTP code is: ${otp}`, // 5 digit code that can have a leading 0
-  //     PhoneNumber: req.body.contact,
-  //     MessageAttributes: {
-  //       "AWS.SNS.SMS.SenderID": {
-  //         DataType: "String",
-  //         StringValue: "AlongApp",
-  //       },
-  //     },
-  //   };
-
-  //   const sns = new SNSClient({
-  //     region: process.env.REGION,
-  //     credentials: {
-  //       accessKeyId: process.env.AWS_ACCESS_KEY,
-  //       secretAccessKey: process.env.AWS_SECRET_KEY,
-  //     },
-  //   });
-  //   await sendSMSMessage(sns, params);
-  // })();
-
-  res.status(200).json({
-    status: "success",
-    message: "OTP sent to your phone number.",
-  });
 });
 
 exports.verifyContact = async (req, res, next) => {
@@ -250,37 +222,25 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   await otpEntry.save({ validateBeforeSave: false });
 
   // 3) Send it to the driver's phone number
-  async function sendSMSMessage(sns, params) {
-    const command = new PublishCommand(params);
-    const message = await sns.send(command);
-    return message;
-  }
-  (async () => {
-    const params = {
-      Message: `Your OTP code is: ${otp}`, // 5 digit code that can have a leading 0
-      PhoneNumber: req.body.contact,
-      MessageAttributes: {
-        "AWS.SNS.SMS.SenderID": {
-          DataType: "String",
-          StringValue: "AlongApp",
-        },
-      },
-    };
+  const twilioService = new TwilioService(
+    process.env.TWILIO_ACCOUNT_SID,
+    process.env.TWILIO_AUTH_TOKEN,
+    "+12513091646" // Your Twilio phone number
+  );
 
-    const sns = new SNSClient({
-      region: process.env.REGION,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY,
-        secretAccessKey: process.env.AWS_SECRET_KEY,
-      },
+  try {
+    await twilioService.sendSMS(req.body.contact, otp);
+    res.status(200).json({
+      status: "success",
+      message: "OTP sent to your phone number.",
     });
-    await sendSMSMessage(sns, params);
-  })();
-
-  res.status(200).json({
-    status: "success",
-    message: "OTP sent to your phone number.",
-  });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Failed to send OTP.",
+      error: error.message,
+    });
+  }
 });
 
 exports.resetPassword = catchAsync(async (req, res, next) => {
