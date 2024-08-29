@@ -136,6 +136,76 @@ io.on("connection", (socket) => {
 
     console.log(ride);
   });
+
+  /**
+   *  Passenger Events
+   */
+  // This event listens for a rider to request active drivers
+  socket.on("find-drivers", ({ lat: passengerLat, lon: passengerLon }) => {
+    console.log(UsersState.users);
+    // get all drivers
+    const drivers = UsersState.users.filter(
+      (user) => user.userType === "drivers" && user.location
+    );
+
+    drivers.forEach((driver) => {
+      const { lat: driverLat, lng: driverLon } = driver.location;
+      console.log(driverLat, driverLon, passengerLat, passengerLon);
+      const distance = calculateDistance(
+        driverLat,
+        driverLon,
+        passengerLat,
+        passengerLon
+      );
+      console.log(
+        `Driver ${driver.name} is ${distance} units away from the passenger.`
+      );
+    });
+
+    // send drivers to rider
+    io.to(socket.id).emit("drivers", {
+      drivers,
+    });
+  });
+
+  socket.on("update-ride", (data) => {
+    const { driverId, location } = data; // Assuming location is { lat, lng }
+
+    // Fetch the ride associated with the driver
+    let ride = ActiveRidesState.rides.find(
+      (ride) => ride.driverId === driverId
+    );
+    if (!ride) return; // Handle case where ride is not found
+
+    // Assuming the riderDestination is in the form { lat, lng }
+    const riderDestination = ride.riderDestination;
+
+    // Calculate distance to the destination
+    const distanceToDestination = calculateDistance(
+      location.lat,
+      location.lng,
+      riderDestination.lat,
+      riderDestination.lng
+    );
+
+    let status;
+    if (distanceToDestination < 0.05) {
+      // Threshold for arrival
+      status = "arrived";
+    } else if (distanceToDestination < 5) {
+      // Assuming 5 km is close enough to consider "moving to destination"
+      status = "moving to destination";
+    } else {
+      status = "en route";
+    }
+
+    // Update the ride status
+    ride = { ...ride, status };
+
+    // Broadcast updated status
+    const rideId = `${driverId}-${ride.riderId}`;
+    io.to(rideId).emit("ride-status-updated", { ride });
+  });
 });
 
 // User functions
