@@ -1,0 +1,25 @@
+{
+  "name": "along-sdk",
+  "version": "0.0.1",
+  "description": "A lightweight SDK for integrating with the Along platform.",
+  "main": "dist/index.js",
+  "module": "./dist/index.mjs",
+  "unpckg": "./dist/index.umd.js",
+  "types": "./dist/index.d.ts",
+  "homepage": "",
+  "repository": {
+    "url": ""
+  },
+  "scripts": {
+    "build": "tsup"
+  },
+  "keywords": [],
+  "author": "along-app",
+  "license": "ISC",
+  "devDependencies": {
+    "@swc/core": "^1.7.26",
+    "@types/node": "^22.5.4",
+    "tsup": "^8.2.4",
+    "typescript": "^5.6.2"
+  }
+}
