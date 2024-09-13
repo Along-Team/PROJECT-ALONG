@@ -208,6 +208,18 @@ io.on("connection", (socket) => {
   });
 });
 
+// sockets for ride events
+function updateRide({ driverId, riderId, rideStatus }) {
+  const ride = { driverId, riderId, rideStatus };
+  ActiveRidesState.setRides([
+    ...ActiveRidesState.rides.filter(
+      (ride) => ride.driverId !== driverId && ride.riderId !== riderId
+    ),
+    ride,
+  ]);
+  return ride;
+}
+
 // User functions
 function activateUser(
   id,

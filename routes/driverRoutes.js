@@ -7,6 +7,7 @@ const router = express.Router();
 
 // Driver Routes
 router.post("/signup", authController.initiateSignup);
+// create a resend OTP endpoint same as verifysignup
 router.post("/verifysignup", authController.verifyContact);
 router.post("/login", authController.login);
 // router.get('/logout', authController.logout);
