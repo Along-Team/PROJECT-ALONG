@@ -3,12 +3,12 @@ const {
   findReference,
   FindReferenceError,
   ValidateTransfer,
-} = require("solana-pay");
-// const {establishConnection} = require("../solana-pay/establish-connection")
-const MERCHANT_WALLET = require("../constants").MERCHANT_WALLET;
-const { Keypair, PublicKey } = require("@solana/web3.js");
-const { BigNumber } = require("bignumber.js");
+} = require("@solana/pay");
 const { response } = require("express");
+const { BigNumber } = require("bignumber.js");
+const { Keypair, PublicKey } = require("@solana/web3.js");
+const MERCHANT_WALLET = require("../solana-pay/constants");
+const { establishConnection } = require("../solana-pay/establish-connection");
 
 const initPay = async (req, res) => {
   try {
@@ -72,7 +72,7 @@ const checkTransactionStatus = async (req, res) => {
       }
     }
   } catch (error) {
-    res.statu(400).send({
+    res.status(400).send({
       message: error.message,
     });
   }

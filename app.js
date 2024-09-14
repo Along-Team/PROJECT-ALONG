@@ -1,21 +1,22 @@
-const express = require("express");
-const morgan = require("morgan");
-const rateLimit = require("express-rate-limit");
-const helmet = require("helmet");
-const mongoSanitize = require("express-mongo-sanitize");
-const xss = require("xss-clean");
 const hpp = require("hpp");
-const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const http = require("http");
+const morgan = require("morgan");
+const helmet = require("helmet");
+const xss = require("xss-clean");
+const express = require("express");
 const { Server } = require("socket.io");
-
 const AppError = require("./utils/appError");
-const globalErrorHandler = require("./controllers/errorController");
-const driverRouter = require("./routes/driverRoutes");
-const passengerRouter = require("./routes/passengerRoutes");
+const cookieParser = require("cookie-parser");
+const rateLimit = require("express-rate-limit");
 const rideRouter = require("./routes/rideRoutes");
+const driverRouter = require("./routes/driverRoutes");
 const ratingRouter = require("./routes/ratingRoutes");
+const mongoSanitize = require("express-mongo-sanitize");
+const paymentRouter = require("./routes/paymentRoutes");
+const passengerRouter = require("./routes/passengerRoutes");
+const globalErrorHandler = require("./controllers/errorController");
+
 // const http = require("http");
 // const { Server } = require("socket.io");
 
@@ -69,9 +70,10 @@ app.get("/api/welcome", (req, res) => {
 });
 
 app.use("/api/v1/passengers", passengerRouter);
+app.use("/api/v1/payments", paymentRouter);
 app.use("/api/v1/drivers", driverRouter);
-app.use("/api/v1/rides", rideRouter);
 app.use("/api/v1/rating", ratingRouter);
+app.use("/api/v1/rides", rideRouter);
 
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
