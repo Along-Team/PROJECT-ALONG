@@ -4,13 +4,14 @@ const {
   FindReferenceError,
   ValidateTransfer,
 } = require("@solana/pay");
-const { response } = require("express");
 const { BigNumber } = require("bignumber.js");
+const catchAsync = require("../utils/catchAsync");
 const { Keypair, PublicKey } = require("@solana/web3.js");
 const MERCHANT_WALLET = require("../solana-pay/constants");
+// const MERCHANT_WALLET = "2Gz9ag48EayRrzEfXRkNWNLHxvSkXydLfM8TwzrV6iCY";
 const { establishConnection } = require("../solana-pay/establish-connection");
 
-const initPay = async (req, res) => {
+exports.initPay = catchAsync((req, res) => {
   try {
     const { amount, label, message, memo } = req.body;
     if (!amount || !label || !message || !memo) {
@@ -33,9 +34,9 @@ const initPay = async (req, res) => {
     console.log(error);
   }
   res.status(400).send({ message: error.message });
-};
+});
 
-const checkTransactionStatus = async (req, res) => {
+exports.checkTransactionStatus = catchAsync(async (req, res) => {
   const connection = await establishConnection();
   const { amount, reference } = req.body;
   if (!amount || reference) {
@@ -76,9 +77,4 @@ const checkTransactionStatus = async (req, res) => {
       message: error.message,
     });
   }
-
-  module.exports = {
-    initPay,
-    checkTransactionStatus,
-  };
-};
+});

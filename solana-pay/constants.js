@@ -8,5 +8,5 @@ const MERCHANT_WALLET = new PublicKey(process.env.MERCHANT_WALLET_PUBLIC_KEY);
 // const CUSTOMER_WALLET = Keypair.fromSecretKey(Uint8Array.from([]))
 module.exports = {
   MERCHANT_WALLET,
-  CUSTOMER_WALLET,
+  // CUSTOMER_WALLET,
 };
