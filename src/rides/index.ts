@@ -12,7 +12,6 @@ export class Ride extends Base {
   updateRideStatus(): Promise<any> {
     return this.invoke(`${resource}/updateRideStatus`);
   }
-
   getRidersWithin(): Promise<any> {
     return this.invoke(`${resource}/getRidersWithin`);
   }
