@@ -42,6 +42,41 @@ const createSendToken = (passenger, statusCode, res) => {
   });
 };
 
+// exports.signup = catchAsync(async (req, res, next) => {
+//   //1) Generate a 5-digit OTP
+//   const otp = Math.random().toString().substring(2, 7);
+
+//   const newPassenger = await Passenger.create(req.body);
+
+//   // 2) Store OTP with the contact information
+//   const otpEntry = new OTP({
+//     contact: req.body.contact,
+//     otp: otp,
+//     expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours expiry
+//   });
+//   await otpEntry.save();
+
+//   // 3) Send it to the passenger's phone number
+//   const twilioService = new TwilioService(
+//     process.env.TWILIO_ACCOUNT_SID,
+//     process.env.TWILIO_AUTH_TOKEN,
+//     "+12513091646" // Your Twilio phone number
+//   );
+
+//   try {
+//     await twilioService.sendSMS(req.body.contact, otp);
+//     res.status(200).json({
+//       status: "success",
+//       message: "OTP sent to your phone number.",
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       status: "error",
+//       message: "Failed to send OTP.",
+//       error: error.message,
+//     });
+//   }
+// });
 exports.signup = catchAsync(async (req, res, next) => {
   //1) Generate a 5-digit OTP
   const otp = Math.random().toString().substring(2, 7);
@@ -56,18 +91,88 @@ exports.signup = catchAsync(async (req, res, next) => {
   });
   await otpEntry.save();
 
-  // 3) Send it to the passenger's phone number
-  const twilioService = new TwilioService(
-    process.env.TWILIO_ACCOUNT_SID,
-    process.env.TWILIO_AUTH_TOKEN,
-    "+12513091646" // Your Twilio phone number
-  );
+  //3) send otp to passenger's email address
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
   try {
-    await twilioService.sendSMS(req.body.contact, otp);
+    const { data, error } = await resend.emails.send({
+      from: "Along App <onboarding@resend.dev>",
+      to: email,
+      subject: "Welcome To along, Please Verify Your Email Address",
+      html: ` <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Verify Your Email</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          background-color: #f4f4f4;
+          margin: 0;
+          padding: 0;
+        }
+        .container {
+          max-width: 600px;
+          margin: 0 auto;
+          background-color: #ffffff;
+          padding: 20px;
+          border-radius: 8px;
+          box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+          text-align: center;
+          padding: 10px 0;
+        }
+        .header h1 {
+          margin: 0;
+          color: #333333;
+        }
+        .content {
+          margin: 20px 0;
+        }
+        .content p {
+          color: #666666;
+          line-height: 1.6;
+        }
+        .otp {
+          font-size: 24px;
+          font-weight: bold;
+          color: #333333;
+          text-align: center;
+          margin: 20px 0;
+        }
+        .footer {
+          text-align: center;
+          padding: 10px 0;
+          color: #999999;
+          font-size: 12px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Welcome to Along!</h1>
+        </div>
+        <div class="content">
+          <p>Hi {{name}},</p>
+          <p>Thank you for signing up with Along. Please use the following OTP to verify your email address:</p>
+          <div class="otp">{{otp}}</div>
+          <p>This OTP is valid for 24 hours. If you did not request this, please ignore this email.</p>
+        </div>
+        <div class="footer">
+          <p>&copy; 2023 Along. All rights reserved.</p>
+        </div>
+      </div>
+    </body>
+    </html>`,
+    });
+    if (error) {
+      return res.status(400).json({ error });
+    }
     res.status(200).json({
       status: "success",
-      message: "OTP sent to your phone number.",
+      message: "OTP sent to your email .",
     });
   } catch (error) {
     res.status(500).json({
