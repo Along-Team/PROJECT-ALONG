@@ -1,6 +1,6 @@
 const crypto = require("crypto");
 const twilio = require("twilio");
-const Resend = require("resend");
+// const Resend = require("resend");
 const { SNSClient, PublishCommand } = require("@aws-sdk/client-sns");
 const { promisify } = require("util");
 const jwt = require("jsonwebtoken");
