@@ -7,12 +7,12 @@ const passengerSchema = new mongoose.Schema({
     type: String,
     unique: true,
   },
-  // email: {
-  //   type: String,
-  //   unique: true,
-  //   lowercase: true,
-  //   validate: [validator.isEmail, "Please enter a valid email"],
-  // },
+  email: {
+    type: String,
+    unique: true,
+    lowercase: true,
+    validate: [validator.isEmail, "Please enter a valid email"],
+  },
   password: {
     type: String,
     required: [true, "Please enter a password"],
