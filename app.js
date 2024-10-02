@@ -70,7 +70,7 @@ app.get("/api/welcome", (req, res) => {
 });
 
 app.use("/api/v1/passengers", passengerRouter);
-app.use("/api/v1/payments", paymentRouter);
+// app.use("/api/v1/payments", paymentRouter);
 app.use("/api/v1/drivers", driverRouter);
 app.use("/api/v1/rating", ratingRouter);
 app.use("/api/v1/rides", rideRouter);
@@ -208,19 +208,36 @@ io.on("connection", (socket) => {
     const rideId = `${driverId}-${ride.riderId}`;
     io.to(rideId).emit("ride-status-updated", { ride });
   });
-});
 
-// sockets for ride events
-function updateRide({ driverId, riderId, rideStatus }) {
-  const ride = { driverId, riderId, rideStatus };
-  ActiveRidesState.setRides([
-    ...ActiveRidesState.rides.filter(
-      (ride) => ride.driverId !== driverId && ride.riderId !== riderId
-    ),
-    ride,
-  ]);
-  return ride;
-}
+  socket.on("ride-data", (ridedata) => {
+    const {
+      driverid,
+      driverLocation,
+      passengerid,
+      passengerLocation,
+      destination,
+      Distance,
+    } = ridedata;
+    // activateUser(
+    //   socket.id,
+    //   driverid,
+    //   driverLocation,
+    //   passengerid,
+    //   passengerLocation,
+    //   destination,
+    //   Distance
+    // );
+    createRide(
+      driverid,
+      driverLocation,
+      passengerid,
+      passengerLocation,
+      destination,
+      Distance
+    );
+    console.log(ridedata);
+  });
+});
 
 // User functions
 function activateUser(
@@ -242,6 +259,84 @@ function activateUser(
 
 function getUser(id) {
   return UsersState.users.find((user) => user.id === id);
+}
+
+function updateRide(data) {
+  let { driverId, riderId, rideStatus = "accepted" } = data;
+
+  // Fetch driver and rider details
+  const driver = getUser(driverId);
+  const rider = getUser(riderId);
+
+  // Assuming driver.location and rider.destination are available
+  const driverLocation = driver.location;
+  const riderDestination = rider.destination;
+
+  let ride = {
+    driverId: driver.id,
+    riderId: rider.id,
+    driverLocation,
+    riderDestination,
+    rideStatus,
+  };
+
+  // This part seems like it was meant for updating the in-memory store of active rides
+  const existingRideIndex = ActiveRidesState.rides.findIndex(
+    (ride) => ride.driverId === driverId
+  );
+  if (existingRideIndex !== -1) {
+    ActiveRidesState.rides[existingRideIndex] = ride;
+  } else {
+    ActiveRidesState.rides.push(ride);
+  }
+
+  // Emit the updated ride information
+  const rideId = `${driverId}-${riderId}`;
+  io.to(driverId).socketsJoin(rideId); // Ensure driver joins the ride room
+  io.to(riderId).socketsJoin(rideId); // Ensure rider joins the same ride room
+
+  // Emit an event to this room whenever there are updates to this ride
+  io.to(rideId).emit("rideUpdate", { ride });
+
+  return ride;
+}
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) *
+      Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c; // Distance in km
+  return distance;
+}
+
+function deg2rad(deg) {
+  return deg * (Math.PI / 180);
+}
+
+async function createRide(
+  driverid,
+  driverLocation,
+  passengerid,
+  passengerLocation,
+  destination,
+  Distance
+) {
+  const newRide = await Ride.create({
+    driverid: driverid,
+    driverLocation: driverLocation,
+    passengerid: passengerid,
+    passengerLocation: passengerLocation,
+    startLocation: passengerLocation,
+    endLocation: destination,
+    distance: Distance,
+  });
 }
 
 module.exports = { app, server };
