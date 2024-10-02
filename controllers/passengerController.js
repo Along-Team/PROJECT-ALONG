@@ -77,6 +77,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     });
   }
 });
+
 // exports.signup = catchAsync(async (req, res, next) => {
 //   //1) Generate a 5-digit OTP
 //   const otp = Math.random().toString().substring(2, 7);

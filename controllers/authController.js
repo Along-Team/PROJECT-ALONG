@@ -72,11 +72,11 @@ exports.initiateSignup = catchAsync(async (req, res, next) => {
   const twilioService = new TwilioService(
     process.env.TWILIO_ACCOUNT_SID,
     process.env.TWILIO_AUTH_TOKEN,
-    "+12513091646" // Your Twilio phone number
+    "ALONG APP" // SenderID
   );
 
   //4) send otp to passenger's email address
-  const resend = new Resend(process.env);
+  // const resend = new Resend(process.env);
 
   try {
     await twilioService.sendSMS(req.body.contact, otp);
