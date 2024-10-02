@@ -11,6 +11,7 @@ const AppError = require("./../utils/appError");
 const TwilioService = require("../utils/sendSMS");
 const dotenv = require("dotenv");
 // const { access } = require("fs");
+const sendEmail = require("../utils/sendEmail");
 
 dotenv.config();
 
@@ -46,51 +47,51 @@ const createSendToken = (driver, statusCode, res) => {
   });
 };
 
-// exports.initiateSignup = catchAsync(async (req, res, next) => {
-//   // Generate a 5-digit OTP
-//   const otp = Math.random().toString().substring(2, 7);
+exports.initiateSignup = catchAsync(async (req, res, next) => {
+  // Generate a 5-digit OTP
+  const otp = Math.random().toString().substring(2, 7);
 
-//   const newDriver = await Driver.create(req.body);
-//   // const newDriver = await Driver.create({
-//   //   email: req.body.email,
-//   //   userName: req.body.userName,
-//   //   password: req.body.password,
-//   //   contact: req.body.contact,
-//   //   photo: req.body.photo,
-//   // });
+  const newDriver = await Driver.create(req.body);
+  // const newDriver = await Driver.create({
+  //   email: req.body.email,
+  //   userName: req.body.userName,
+  //   password: req.body.password,
+  //   contact: req.body.contact,
+  //   photo: req.body.photo,
+  // });
 
-//   // Store OTP with the contact information
-//   const otpEntry = new OTP({
-//     contact: req.body.contact,
-//     otp: otp,
-//     expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours expiry
-//   });
-//   await otpEntry.save();
+  // Store OTP with the contact information
+  const otpEntry = new OTP({
+    contact: req.body.contact,
+    otp: otp,
+    expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours expiry
+  });
+  await otpEntry.save();
 
-//   // 3) Send it to the passenger's phone number
-//   const twilioService = new TwilioService(
-//     process.env.TWILIO_ACCOUNT_SID,
-//     process.env.TWILIO_AUTH_TOKEN,
-//     "+12513091646" // Your Twilio phone number
-//   );
+  // 3) Send it to the passenger's phone number
+  const twilioService = new TwilioService(
+    process.env.TWILIO_ACCOUNT_SID,
+    process.env.TWILIO_AUTH_TOKEN,
+    "+12513091646" // Your Twilio phone number
+  );
 
-//   //4) send otp to passenger's email address
-//   const resend = new Resend(process.env);
+  //4) send otp to passenger's email address
+  const resend = new Resend(process.env);
 
-//   try {
-//     await twilioService.sendSMS(req.body.contact, otp);
-//     res.status(200).json({
-//       status: "success",
-//       message: "OTP sent to your phone number.",
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       status: "error",
-//       message: "Failed to send OTP.",
-//       error: error.message,
-//     });
-//   }
-// });
+  try {
+    await twilioService.sendSMS(req.body.contact, otp);
+    res.status(200).json({
+      status: "success",
+      message: "OTP sent to your phone number.",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Failed to send OTP.",
+      error: error.message,
+    });
+  }
+});
 
 exports.initiateSignupWithEmail = catchAsync(async (req, res, next) => {
   // Generate a 5-digit OTP
@@ -106,88 +107,58 @@ exports.initiateSignupWithEmail = catchAsync(async (req, res, next) => {
   });
   await otpEntry.save();
 
-  //4) send otp to passenger's email address
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  // Generate the random email verification token
+  const verifyToken = newDriver.createAccountVerifyToken();
+  await newDriver.save({ validateBeforeSave: false });
+
+  // 3) Send it to the user's email
+  const verificationURL = `${req.protocol}://${req.get(
+    "host"
+  )}/api/drivers/verifyEmail/${verifyToken}`;
+
+  const message = `Welcome to AlongApp! To verify your email, please submit a PATCH request to: ${verificationURL}.\n And attach the ${otp}, if you didn't sign up for an account, please ignore this email!`;
 
   try {
-    const { data, error } = await resend.emails.send({
-      from: "Along App <onboarding@resend.dev>",
-      to: email,
-      subject: "Welcome To along, Please Verify Your Email Address",
-      html: ` <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>Verify Your Email</title>
-      <style>
-        body {
-          font-family: Arial, sans-serif;
-          background-color: #f4f4f4;
-          margin: 0;
-          padding: 0;
-        }
-        .container {
-          max-width: 600px;
-          margin: 0 auto;
-          background-color: #ffffff;
-          padding: 20px;
-          border-radius: 8px;
-          box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        .header {
-          text-align: center;
-          padding: 10px 0;
-        }
-        .header h1 {
-          margin: 0;
-          color: #333333;
-        }
-        .content {
-          margin: 20px 0;
-        }
-        .content p {
-          color: #666666;
-          line-height: 1.6;
-        }
-        .otp {
-          font-size: 24px;
-          font-weight: bold;
-          color: #333333;
-          text-align: center;
-          margin: 20px 0;
-        }
-        .footer {
-          text-align: center;
-          padding: 10px 0;
-          color: #999999;
-          font-size: 12px;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>Welcome to Along!</h1>
-        </div>
-        <div class="content">
-          <p>Hi {{name}},</p>
-          <p>Thank you for signing up with Along. Please use the following OTP to verify your email address:</p>
-          <div class="otp">{{otp}}</div>
-          <p>This OTP is valid for 24 hours. If you did not request this, please ignore this email.</p>
-        </div>
-        <div class="footer">
-          <p>&copy; 2023 Along. All rights reserved.</p>
-        </div>
-      </div>
-    </body>
-    </html>`,
+    await sendEmail({
+      email: req.body.email,
+      subject: "Verify Your Email Address",
+      message,
     });
-    if (error) {
-      return res.status(400).json({ error });
-    }
+    // console.log(req.body.email);
     res.status(200).json({
       status: "success",
-      message: "OTP sent to your email .",
+      message: "Verification token sent to email!",
+    });
+  } catch (err) {
+    // Handle the error, e.g., return a 500 status code
+    console.log(err);
+    return next(new AppError("Email Verification not sent", 500));
+  }
+});
+
+exports.resendOTP = catchAsync(async (req, res, next) => {
+  // Generate a 5-digit OTP
+  const otp = Math.random().toString().substring(2, 7);
+
+  const otpEntry = new OTP({
+    contact: req.body.contact,
+    otp: otp,
+    expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours expiry
+  });
+  await otpEntry.save();
+
+  // 3) Send it to the passenger's phone number
+  const twilioService = new TwilioService(
+    process.env.TWILIO_ACCOUNT_SID,
+    process.env.TWILIO_AUTH_TOKEN,
+    "ALONG APP" // SenderID
+  );
+
+  try {
+    await twilioService.sendSMS(req.body.contact, otp);
+    res.status(200).json({
+      status: "success",
+      message: "OTP sent to your phone number.",
     });
   } catch (error) {
     res.status(500).json({
@@ -199,10 +170,38 @@ exports.initiateSignupWithEmail = catchAsync(async (req, res, next) => {
 });
 
 exports.verifyEmail = async (req, res, next) => {
-  const { email, otp } = req.body;
+  // 1) Get USER based on the token
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(req.params.token)
+    .digest("hex");
+
+  const user = await Driver.findOne({
+    where: {
+      emailVerifyToken: hashedToken,
+    },
+  });
+
+  // 2) If token has not expired, and there is a user, set the new password
+  if (!user) {
+    return next(new AppError("Token is invalid or has expired", 400));
+  }
+
+  // Update the ACTIVATED, EMAILVERIFYTOKEN and EMAILVERIFYEXPIRES
+  user.activated = true;
+  user.emailVerifyToken = undefined;
+  user.emailVerifyExpires = undefined;
+  await user.save();
+
+  // 4) Log the USER in, send JWT
+  createSendToken(user, 200, res);
+};
+
+exports.verifyContact = async (req, res, next) => {
+  const { contact, otp } = req.body;
 
   // Find the OTP entry
-  const otpEntry = await OTP.findOne({ email });
+  const otpEntry = await OTP.findOne({ contact });
   console.log("OTP Entry found:", otpEntry);
 
   if (!otpEntry || otpEntry.expiresAt < Date.now()) {
@@ -224,7 +223,7 @@ exports.verifyEmail = async (req, res, next) => {
   await OTP.deleteOne({ otp });
 
   // console.log("Contact received:", contact);
-  const driver = await Driver.findOne({ email });
+  const driver = await Driver.findOne({ contact });
   if (!driver) {
     return res.status(404).json({
       status: "fail",
@@ -239,48 +238,6 @@ exports.verifyEmail = async (req, res, next) => {
   // 4) Log the DRIVER in, send JWT
   createSendToken(driver, 200, res);
 };
-
-// exports.verifyContact = async (req, res, next) => {
-//   const { contact, otp } = req.body;
-
-//   // Find the OTP entry
-//   const otpEntry = await OTP.findOne({ contact });
-//   console.log("OTP Entry found:", otpEntry);
-
-//   if (!otpEntry || otpEntry.expiresAt < Date.now()) {
-//     return res.status(400).json({
-//       status: "fail",
-//       message: "OTP is invalid or has expired.",
-//     });
-//   }
-
-//   // Verify the OTP
-//   if (otp !== otpEntry.otp) {
-//     return res.status(400).json({
-//       status: "fail",
-//       message: "OTP is incorrect.",
-//     });
-//   }
-
-//   //Delete the OTP entry
-//   await OTP.deleteOne({ otp });
-
-//   // console.log("Contact received:", contact);
-//   const driver = await Driver.findOne({ contact });
-//   if (!driver) {
-//     return res.status(404).json({
-//       status: "fail",
-//       message: "Driver not found.",
-//     });
-//   }
-
-//   // 3) Update Driver Status
-//   driver.active = true;
-//   await driver.save();
-
-//   // 4) Log the DRIVER in, send JWT
-//   createSendToken(driver, 200, res);
-// };
 
 exports.login = catchAsync(async (req, res, next) => {
   const { userName, password } = req.body;
@@ -380,7 +337,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   const twilioService = new TwilioService(
     process.env.TWILIO_ACCOUNT_SID,
     process.env.TWILIO_AUTH_TOKEN,
-    "+12513091646" // Your Twilio phone number
+    "ALONG APP" // SenderID
   );
 
   try {

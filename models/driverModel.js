@@ -45,6 +45,12 @@ const driverSchema = new mongoose.Schema({
     default: false,
     // select: false,
   },
+  emailVerifyToken: {
+    type: String,
+  },
+  emailVerifyExpires: {
+    type: Date,
+  },
   role: {
     type: String,
     enum: ["passenger", "driver"],
@@ -55,10 +61,10 @@ const driverSchema = new mongoose.Schema({
 // driverSchema.index({ location: "2dsphere" });
 
 //Virtual Populate
-driverSchema.virtual('reviews', {
-  ref: 'Review',
-  foreignField: 'driver',
-  localField: '_id', 
+driverSchema.virtual("reviews", {
+  ref: "Review",
+  foreignField: "driver",
+  localField: "_id",
 });
 
 driverSchema.pre("save", async function (next) {
@@ -78,6 +84,22 @@ driverSchema.pre("save", async function (next) {
 //   this.find({ active: { $ne: false } });
 //   next();
 // });
+
+// To generate token to verify password
+driverSchema.methods.createAccountVerifyToken = function () {
+  const verifyToken = crypto.randomBytes(32).toString("hex");
+
+  this.emailVerifyToken = crypto
+    .createHash("sha256")
+    .update(verifyToken)
+    .digest("hex");
+
+  console.log({ verifyToken }, this.emailVerifyToken);
+
+  this.emailVerifyExpires = Date.now() + 40 * 120 * 120 * 1000;
+
+  return verifyToken;
+};
 
 driverSchema.methods.correctPassword = async function (
   candidatePassword,
