@@ -4,8 +4,9 @@ const rideController = require("./../controllers/rideController");
 
 const router = express.Router();
 
-router.route("/createride").post(rideController.createRide);
-router.route("/updateride/:id").patch(rideController.isMoving);
-router.route("/distances/:latlng/unit/:unit").get(rideController.getDistances);
+// router.route("/createride").post(rideController.createRide);
+router.get("/recentride/:passengerid", rideController.recentRide);
+
+// router.route("/distances/:latlng/unit/:unit").get(rideController.getDistances);
 
 module.exports = router;
