@@ -21,14 +21,9 @@ const globalErrorHandler = require("./controllers/errorController");
 // const { Server } = require("socket.io");
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: ["http://localhost:3000", "http://localhost:3001"], // specify allowed origins
-    // methods: ["GET", "POST"], // optionally restrict allowed HTTP methods
-    credentials: true, // allow credentials (cookies, authorization headers, etc.)
-  },
-});
+
+// Apply CORS middleware to Express
+app.use(cors());
 
 // Security HTTP headers
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -82,6 +77,17 @@ app.all("*", (req, res, next) => {
 });
 
 app.use(globalErrorHandler);
+
+const server = http.createServer(app);
+// Socket.io setup with CORS
+const io = new Server(server, {
+  cors: {
+    origin: "*", // Allow all origins
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Authorization"],
+    credentials: true,
+  },
+});
 
 // Socket.io Setup
 const UsersState = {
