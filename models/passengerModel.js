@@ -34,10 +34,10 @@ const passengerSchema = new mongoose.Schema({
     unique: true,
     minlength: 11,
   },
-  photo: {
-    type: String,
-    default: "default.jpg",
-  },
+ // photo: {
+  //  type: String,
+   // default: "default.jpg",
+ // },
   cardNumber: {
     type: String,
     unique: true,
