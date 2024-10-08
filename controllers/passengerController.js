@@ -184,6 +184,39 @@ exports.signup = catchAsync(async (req, res, next) => {
 //   }
 // });
 
+exports.resendOTP = catchAsync(async (req, res, next) => {
+  // Generate a 5-digit OTP
+  const otp = Math.random().toString().substring(2, 7);
+
+  const otpEntry = new OTP({
+    contact: req.body.contact,
+    otp: otp,
+    expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours expiry
+  });
+  await otpEntry.save();
+
+  // 3) Send it to the passenger's phone number
+  const twilioService = new TwilioService(
+    process.env.TWILIO_ACCOUNT_SID,
+    process.env.TWILIO_AUTH_TOKEN,
+    "ALONG APP" // SenderID
+  );
+
+  try {
+    await twilioService.sendSMS(req.body.contact, otp);
+    res.status(200).json({
+      status: "success",
+      message: "OTP sent to your phone number.",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Failed to send OTP.",
+      error: error.message,
+    });
+  }
+});
+
 exports.verifyContact = async (req, res, next) => {
   const { contact, otp } = req.body;
 
