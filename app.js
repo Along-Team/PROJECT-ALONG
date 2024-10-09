@@ -67,7 +67,7 @@ app.get("/api/welcome", (req, res) => {
 });
 
 app.use("/api/v1/passengers", passengerRouter);
-// app.use("/api/v1/payments", paymentRouter);
+app.use("/api/v1/payments", paymentRouter);
 app.use("/api/v1/drivers", driverRouter);
 app.use("/api/v1/rating", ratingRouter);
 app.use("/api/v1/rides", rideRouter);
