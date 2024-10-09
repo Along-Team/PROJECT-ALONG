@@ -19,16 +19,16 @@ const passengerSchema = new mongoose.Schema({
     minlength: 8,
     //select: false
   },
-  verifypassword: {
-    type: String,
-    minlength: 8,
-    validate: {
-      validator: function (el) {
-        return el === this.password;
-      },
-      message: "Passwords are not the same",
-    },
-  },
+  //verifypassword: {
+    //type: String,
+    //minlength: 8,
+    //validate: {
+      //validator: function (el) {
+      //  return el === this.password;
+   //   },
+    //  message: "Passwords are not the same",
+  //  },
+//  },
   contact: {
     type: String,
     unique: true,
