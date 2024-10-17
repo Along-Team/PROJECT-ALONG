@@ -45,16 +45,31 @@ const driverSchema = new mongoose.Schema({
     default: false,
     // select: false,
   },
-  emailVerifyToken: {
-    type: String,
-  },
-  emailVerifyExpires: {
-    type: Date,
-  },
   role: {
     type: String,
     enum: ["passenger", "driver"],
     default: "driver",
+  },
+  ratingsAverage: {
+    type: Number,
+    default: 4.5,
+    min: 1,
+    max: 5,
+  },
+  ratingsQuantity: {
+    type: Number,
+    default: 0,
+  },
+  ratingsCount: {
+    type: Map,
+    of: Number, // a map to hold the number of ratings for each value (1-5)
+    default: {
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+    },
   },
 });
 
@@ -84,22 +99,6 @@ driverSchema.pre("save", async function (next) {
 //   this.find({ active: { $ne: false } });
 //   next();
 // });
-
-// To generate token to verify password
-driverSchema.methods.createAccountVerifyToken = function () {
-  const verifyToken = crypto.randomBytes(32).toString("hex");
-
-  this.emailVerifyToken = crypto
-    .createHash("sha256")
-    .update(verifyToken)
-    .digest("hex");
-
-  console.log({ verifyToken }, this.emailVerifyToken);
-
-  this.emailVerifyExpires = Date.now() + 40 * 120 * 120 * 1000;
-
-  return verifyToken;
-};
 
 driverSchema.methods.correctPassword = async function (
   candidatePassword,

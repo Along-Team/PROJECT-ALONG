@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const Driver = require("./driverModel");
 const Passenger = require("./passengerModel");
-//const slugify = require('slugify');
 
 const reviewSchema = new mongoose.Schema(
   {
@@ -29,7 +28,6 @@ const reviewSchema = new mongoose.Schema(
       required: [true, "Review must belong to a Passenger"],
     },
   },
-  // To visualize properties that are not stored in the DB but are calculated using some other values when it has an output
   {
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
@@ -39,23 +37,14 @@ const reviewSchema = new mongoose.Schema(
 reviewSchema.index({ driver: 1, passenger: 1 }, { unique: true });
 
 reviewSchema.pre(/^find/, function (next) {
-  // this.populate({
-  //   select: 'name',
-  // }).populate({
-  //   path: 'user',
-  //   select: 'name photo',
-  // });
-
   this.populate({
     path: "passenger",
     select: "name",
   });
-
   next();
 });
 
 reviewSchema.statics.calcAverageRatings = async function (driverId) {
-  //console.log(tourId);
   const stats = await this.aggregate([
     {
       $match: { driver: driverId },
@@ -65,37 +54,52 @@ reviewSchema.statics.calcAverageRatings = async function (driverId) {
         _id: "$driver",
         nRating: { $sum: 1 },
         avgRating: { $avg: "$rating" },
+        nRating5: { $sum: { $cond: [{ $eq: ["$rating", 5] }, 1, 0] } },
+        nRating4: { $sum: { $cond: [{ $eq: ["$rating", 4] }, 1, 0] } },
+        nRating3: { $sum: { $cond: [{ $eq: ["$rating", 3] }, 1, 0] } },
+        nRating2: { $sum: { $cond: [{ $eq: ["$rating", 2] }, 1, 0] } },
+        nRating1: { $sum: { $cond: [{ $eq: ["$rating", 1] }, 1, 0] } },
       },
     },
   ]);
-  console.log(stats);
 
   if (stats.length > 0) {
     await Driver.findByIdAndUpdate(driverId, {
       ratingsQuantity: stats[0].nRating,
       ratingsAverage: stats[0].avgRating,
+      ratingsCount: {
+        5: stats[0].nRating5,
+        4: stats[0].nRating4,
+        3: stats[0].nRating3,
+        2: stats[0].nRating2,
+        1: stats[0].nRating1,
+      },
     });
   } else {
     await Driver.findByIdAndUpdate(driverId, {
       ratingsQuantity: 0,
       ratingsAverage: 4.5,
+      ratingsCount: {
+        5: 0,
+        4: 0,
+        3: 0,
+        2: 0,
+        1: 0,
+      },
     });
   }
 };
 
 reviewSchema.post("save", function () {
-  // this mints to current review
   this.constructor.calcAverageRatings(this.driver);
 });
 
 reviewSchema.pre(/^findOneAnd/, async function (next) {
   this.r = await this.findOne();
-  console.log(this.r);
   next();
 });
 
 reviewSchema.post(/^findOneAnd/, async function () {
-  // await this.findOne(); does NOT work here, query already executed
   await this.r.constructor.calcAverageRatings(this.r.driver);
 });
 
