@@ -15,6 +15,7 @@ const ratingRouter = require("./routes/ratingRoutes");
 const mongoSanitize = require("express-mongo-sanitize");
 const paymentRouter = require("./routes/paymentRoutes");
 const passengerRouter = require("./routes/passengerRoutes");
+const tripRouter = require("./routes/tripRoutes");
 const globalErrorHandler = require("./controllers/errorController");
 
 // const http = require("http");
@@ -71,6 +72,7 @@ app.use("/api/v1/passengers", passengerRouter);
 app.use("/api/v1/drivers", driverRouter);
 app.use("/api/v1/rating", ratingRouter);
 app.use("/api/v1/rides", rideRouter);
+app.use("/api/v1/trips", tripRouter);
 
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
