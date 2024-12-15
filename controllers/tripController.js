@@ -10,7 +10,7 @@ exports.getAllRoute = factory.getAll(Trip);
 exports.updateRoute = factory.updateOne(Trip);
 
 exports.getRoute = catchAsync(async (req, res, next) => {
-  const trip = await Trip.findOne(req.params.routeno);
+  const trip = await Trip.findOne({ routeno: req.params.routeno });
 
   if (!trip) {
     return next(new AppError("No room with that number", 404));
