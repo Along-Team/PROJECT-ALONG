@@ -1,37 +1,35 @@
+const express = require("express");
+const morgan = require("morgan");
+const rateLimit = require("express-rate-limit");
+const helmet = require("helmet");
+const mongoSanitize = require("express-mongo-sanitize");
+const xss = require("xss-clean");
 const hpp = require("hpp");
+const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const http = require("http");
-const morgan = require("morgan");
-const helmet = require("helmet");
-const xss = require("xss-clean");
-const express = require("express");
 const { Server } = require("socket.io");
+const Ride = require("./models/rideModel");
 const AppError = require("./utils/appError");
-const cookieParser = require("cookie-parser");
-const rateLimit = require("express-rate-limit");
-const rideRouter = require("./routes/rideRoutes");
-const driverRouter = require("./routes/driverRoutes");
-const ratingRouter = require("./routes/ratingRoutes");
-const mongoSanitize = require("express-mongo-sanitize");
-const paymentRouter = require("./routes/paymentRoutes");
-const passengerRouter = require("./routes/passengerRoutes");
-const tripRouter = require("./routes/tripRoutes");
 const globalErrorHandler = require("./controllers/errorController");
+const driverRouter = require("./routes/driverRoutes");
+const passengerRouter = require("./routes/passengerRoutes");
+const rideRouter = require("./routes/rideRoutes");
+const ratingRouter = require("./routes/ratingRoutes");
+const tripRouter = require("./routes/tripRoutes");
+const moniepointRouter = require("./routes/moniepointRoute");
 
 // const http = require("http");
 // const { Server } = require("socket.io");
 
 const app = express();
+const server = http.createServer(app);
 
 // Apply CORS middleware to Express
 app.use(cors());
 
 // Security HTTP headers
 app.use(helmet({ contentSecurityPolicy: false }));
-
-if (process.env.NODE_ENV === "development") {
-  app.use(morgan("dev"));
-}
 
 // Limit requests from same IP address
 const limiter = rateLimit({
@@ -68,11 +66,11 @@ app.get("/api/welcome", (req, res) => {
 });
 
 app.use("/api/v1/passengers", passengerRouter);
-// app.use("/api/v1/payments", paymentRouter);
 app.use("/api/v1/drivers", driverRouter);
-app.use("/api/v1/rating", ratingRouter);
 app.use("/api/v1/rides", rideRouter);
+app.use("/api/v1/rating", ratingRouter);
 app.use("/api/v1/trips", tripRouter);
+app.use("/api/v1/payment", moniepointRouter);
 
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
@@ -80,16 +78,14 @@ app.all("*", (req, res, next) => {
 
 app.use(globalErrorHandler);
 
-const server = http.createServer(app);
-// Socket.io setup with CORS
 const io = new Server(server, {
   cors: {
-    origin: "*", // Allow all origins
-    methods: ["GET", "POST"],
-    allowedHeaders: ["Authorization"],
-    credentials: true,
+    origin: "*",
   },
 });
+if (process.env.NODE_ENV === "development") {
+  app.use(morgan("dev"));
+}
 
 // Socket.io Setup
 const UsersState = {
@@ -115,6 +111,7 @@ io.on("connection", (socket) => {
   socket.on("go-live", (data) => {
     const { name, type, userId, location, destination, plateno } = data;
     activateUser(socket.id, name, type, userId, location, destination, plateno);
+
     console.log(data);
   });
 
