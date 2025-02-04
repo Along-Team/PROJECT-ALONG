@@ -31,7 +31,7 @@ const passengerSchema = new mongoose.Schema({
 //  },
   contact: {
     type: String,
-    unique: true,
+    // unique: true,
     minlength: 11,
   },
  // photo: {
