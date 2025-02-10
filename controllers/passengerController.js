@@ -7,6 +7,9 @@ const SMSService = require("../utils/sendSMS");
 const AppError = require("./../utils/appError");
 const factory = require("./handlefactory");
 const TwilioService = require("../utils/sendSMS");
+const { GridFsStorage } = require("multer-gridfs-storage");
+const multer = require("multer");
+const dotenv = require("dotenv");
 
 const { access } = require("fs");
 
@@ -60,7 +63,7 @@ exports.signup = catchAsync(async (req, res, next) => {
   const twilioService = new TwilioService(
     process.env.TWILIO_ACCOUNT_SID,
     process.env.TWILIO_AUTH_TOKEN,
-    "ALONG APP" // SenderID
+    "+12513091646" // Your Twilio phone number
   );
 
   try {
@@ -78,112 +81,6 @@ exports.signup = catchAsync(async (req, res, next) => {
   }
 });
 
-// exports.signup = catchAsync(async (req, res, next) => {
-//   //1) Generate a 5-digit OTP
-//   const otp = Math.random().toString().substring(2, 7);
-
-//   const newPassenger = await Passenger.create(req.body);
-
-//   // 2) Store OTP with the contact information
-//   const otpEntry = new OTP({
-//     contact: req.body.contact,
-//     otp: otp,
-//     expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours expiry
-//   });
-//   await otpEntry.save();
-
-//   //3) send otp to passenger's email address
-//   const resend = new Resend(process.env.RESEND_API_KEY);
-
-//   try {
-//     const { data, error } = await resend.emails.send({
-//       from: "Along App <onboarding@resend.dev>",
-//       to: email,
-//       subject: "Welcome To along, Please Verify Your Email Address",
-//       html: ` <!DOCTYPE html>
-//     <html>
-//     <head>
-//       <meta charset="UTF-8">
-//       <title>Verify Your Email</title>
-//       <style>
-//         body {
-//           font-family: Arial, sans-serif;
-//           background-color: #f4f4f4;
-//           margin: 0;
-//           padding: 0;
-//         }
-//         .container {
-//           max-width: 600px;
-//           margin: 0 auto;
-//           background-color: #ffffff;
-//           padding: 20px;
-//           border-radius: 8px;
-//           box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-//         }
-//         .header {
-//           text-align: center;
-//           padding: 10px 0;
-//         }
-//         .header h1 {
-//           margin: 0;
-//           color: #333333;
-//         }
-//         .content {
-//           margin: 20px 0;
-//         }
-//         .content p {
-//           color: #666666;
-//           line-height: 1.6;
-//         }
-//         .otp {
-//           font-size: 24px;
-//           font-weight: bold;
-//           color: #333333;
-//           text-align: center;
-//           margin: 20px 0;
-//         }
-//         .footer {
-//           text-align: center;
-//           padding: 10px 0;
-//           color: #999999;
-//           font-size: 12px;
-//         }
-//       </style>
-//     </head>
-//     <body>
-//       <div class="container">
-//         <div class="header">
-//           <h1>Welcome to Along!</h1>
-//         </div>
-//         <div class="content">
-//           <p>Hi {{name}},</p>
-//           <p>Thank you for signing up with Along. Please use the following OTP to verify your email address:</p>
-//           <div class="otp">{{otp}}</div>
-//           <p>This OTP is valid for 24 hours. If you did not request this, please ignore this email.</p>
-//         </div>
-//         <div class="footer">
-//           <p>&copy; 2023 Along. All rights reserved.</p>
-//         </div>
-//       </div>
-//     </body>
-//     </html>`,
-//     });
-//     if (error) {
-//       return res.status(400).json({ error });
-//     }
-//     res.status(200).json({
-//       status: "success",
-//       message: "OTP sent to your email .",
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       status: "error",
-//       message: "Failed to send OTP.",
-//       error: error.message,
-//     });
-//   }
-// });
-
 exports.resendOTP = catchAsync(async (req, res, next) => {
   // Generate a 5-digit OTP
   const otp = Math.random().toString().substring(2, 7);
@@ -199,6 +96,7 @@ exports.resendOTP = catchAsync(async (req, res, next) => {
   const twilioService = new TwilioService(
     process.env.TWILIO_ACCOUNT_SID,
     process.env.TWILIO_AUTH_TOKEN,
+
     "ALONG APP" // SenderID
   );
 
@@ -331,7 +229,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   const twilioService = new TwilioService(
     process.env.TWILIO_ACCOUNT_SID,
     process.env.TWILIO_AUTH_TOKEN,
-    "ALONG APP" // SenderID
+    "+12513091646" // Your Twilio phone number
   );
 
   try {
@@ -399,3 +297,54 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 //   const passenger = await Passenger.findByIdAndUpdate(req.params.id, req.body);
 // });
 exports.updatePassenger = factory.updateOne(Passenger);
+
+dotenv.config({ path: "./config.env" });
+
+const DB = process.env.DATABASE.replace(
+  "<PASSWORD>",
+  process.env.DATABASE_PASSWORD
+);
+
+const storage = new GridFsStorage({
+  url: DB,
+  file: (req, file) => {
+    return {
+      filename: Date.now() + "-" + file.originalname,
+      bucketName: "uploads", // Collection name
+    };
+  },
+});
+
+exports.upload = multer({ storage });
+
+exports.uploadImage = catchAsync(async (req, res, next) => {
+  if (!req.file) {
+    return next(new AppError("No file uploaded", 400));
+  }
+
+  // The file uploaded is accessible via req.file
+  const file = req.file;
+
+  // Respond with the file information
+  res.status(200).json({
+    status: "success",
+    message: "File uploaded to MongoDB!",
+    file: file, // Return file details in response
+  });
+});
+
+exports.getImage = catchAsync(async (req, res, next) => {
+  gfs.files.findOne({ filename: req.params.filename }, (err, file) => {
+    if (!file || file.length === 0) {
+      return res.status(404).json({ err: "No file exists" });
+    }
+
+    // If the file exists and it's an image, stream it back
+    if (file.contentType === "image/jpeg" || file.contentType === "image/png") {
+      const readStream = gfs.createReadStream(file.filename);
+      readStream.pipe(res);
+    } else {
+      res.status(404).json({ err: "Not an image" });
+    }
+  });
+});
