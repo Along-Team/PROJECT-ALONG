@@ -162,6 +162,10 @@ exports.login = catchAsync(async (req, res, next) => {
   // 2) Check if user exist and password is correct
   const passenger = await Passenger.findOne({ userName }).select("+password");
 
+  if (!passenger) {
+    return next(new AppError("No user found with that username", 404));
+  }
+
   if ((await passenger.active) != true) {
     return next(new AppError("Kindly verify your contact", 401));
   }
