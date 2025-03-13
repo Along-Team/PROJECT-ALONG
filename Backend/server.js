@@ -9,7 +9,7 @@ process.on("uncaughtException", (err) => {
   //})
 });
 
-dotenv.config({ path: "./config.env" });
+dotenv.config({ path: "./.env" });
 
 // console.log(process.env);
 
