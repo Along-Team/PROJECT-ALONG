@@ -2,6 +2,7 @@ const axios = require("axios");
 const Moniepay = require("../models/moniepointModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("./../utils/catchAsync");
+const apiService = require("../utils/monnifyAccess");
 
 exports.createWallet = catchAsync(async (req, res, next) => {
   // Send POST request to the external API
@@ -23,11 +24,6 @@ exports.createWallet = catchAsync(async (req, res, next) => {
     },
   });
 });
-const axios = require("axios");
-const Moniepay = require("../models/moniepointModel");
-const AppError = require("../utils/appError");
-const catchAsync = require("./../utils/catchAsync");
-const apiService = require("../utils/monnifyAccess");
 
 require("dotenv").config();
 
